@@ -6,6 +6,10 @@ SOLID_ACCESSORS = [:x, :y, :w, :h, :r, :g, :b, :a]
 #remove when you want state to actually persist
 $gtk.reset
 
+def degrees_to_radians degrees
+  degrees * (Math::PI / 180)
+end
+
 class TankDefense
   STARTING_POSITION = [0, 0]
 
@@ -22,19 +26,28 @@ class TankDefense
   end
 
   def defaults
-    # red, blue, green, not red, green, blue
-    # outputs.static_background_color = [4, 56, 6]
-   
     outputs.static_background_color = [255, 255, 255]
     state.tank ||= Tank.new 0, 0
-    state.cannon ||= Cannon.new state.tank.w * 1.5, state.tank.h * 0.5
+    state.cannon ||= Cannon.new(state.tank.w * 1.5)
   end
 
-  def process_input
+  def process_input 
+    if inputs.keyboard.right or inputs.keyboard.left
+      rotate_cannon
+    end
   end
 
   def renderables
     [state.tank, state.cannon]
+  end
+
+  def rotate_cannon
+    dir = inputs.keyboard.right ? -1 : 1
+    rotation = [0, state.cannon.angle + dir, 90].sort[1]
+
+    if rotation != state.cannon.angle
+      state.cannon.angle += dir
+    end
   end
 
   def render
@@ -57,12 +70,22 @@ class Solid
 end
 
 class Cannon < Solid
-  def initialize x, y
-    @x = x
-    @y = y
+  attr_accessor :radius, :center
+  attr_reader :angle
+
+  def initialize radius
+    @radius = radius
+
+    self.angle = 0.0
 
     @h = 8
     @w = 8
+  end
+
+  def angle= value
+    @x = Math.cos(degrees_to_radians(value)) * @radius
+    @y = Math.sin(degrees_to_radians(value)) * @radius + 16
+    @angle= value
   end
 end
 
